@@ -196,12 +196,12 @@ public class HapticPluginModified : MonoBehaviour  {
 	private UdpClient udpClient;
 	private byte[] sendByte;
 	private Vector3 incision = new Vector3(250, -90, 180);
-	private Vector3 offset = new Vector3(0, 0, 0);
+	private Vector3 offset = new Vector3(0, -100, 100);
 	private float distance = 100;
 	private Matrix4x4 iniOrientation;
 	private Matrix4x4 screenOrientation;
 	private float screenAngle;
-	private float motionScalingFactor = 0.3f;
+	private float motionScalingFactor = 0.5f;
 
 	// Use this for initialization
 	void OnEnable () 
@@ -252,8 +252,8 @@ public class HapticPluginModified : MonoBehaviour  {
 		screenAngle = 65*Mathf.Deg2Rad;
 
 		screenOrientation.SetRow(0, new Vector4(1, 0, 0, 0));
-		screenOrientation.SetRow(1, new Vector4(0, Mathf.Cos(screenAngle), -Mathf.Sin(screenAngle), 0));
-		screenOrientation.SetRow(2, new Vector4(0, Mathf.Sin(screenAngle), Mathf.Cos(screenAngle), 0));
+		screenOrientation.SetRow(1, new Vector4(0, Mathf.Cos(screenAngle), Mathf.Sin(screenAngle), 0));
+		screenOrientation.SetRow(2, new Vector4(0, -Mathf.Sin(screenAngle), Mathf.Cos(screenAngle), 0));
 		screenOrientation.SetRow(3, new Vector4(0, 0, 0, 1));
 
 
@@ -427,8 +427,8 @@ public class HapticPluginModified : MonoBehaviour  {
 			relPos[2] = stylusPositionRaw.z - iniPosInput[2];
 			
 			screenRel.x = (float)relPos[0] - offset.x - dist;
-			screenRel.y = (float)relPos[2] - offset.y;//注意這裡故意為2
-			screenRel.z = (float)relPos[1] - offset.z;//注意這裡故意為1
+			screenRel.y = (float)relPos[2] - offset.y;//relPos[2] is y
+			screenRel.z = (float)relPos[1] - offset.z;//relPos[1] is z
 
 			screenRel = screenOrientation.MultiplyVector(screenRel);
 			relPos[0] = screenRel.x;
@@ -453,7 +453,7 @@ public class HapticPluginModified : MonoBehaviour  {
 			relPos[0] = stylusPositionRaw.x - iniPosInput[0];
 			relPos[1] = stylusPositionRaw.y - iniPosInput[1];
 			relPos[2] = stylusPositionRaw.z - iniPosInput[2];
-
+			//print(relPos[1]);
 			screenRel.x = (float)relPos[0] - offset.x + dist;
 			screenRel.y = (float)relPos[2] - offset.y;
 			screenRel.z = (float)relPos[1] - offset.z;
