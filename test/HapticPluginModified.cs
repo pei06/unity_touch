@@ -18,16 +18,19 @@ using UnityEditor;
 //! This MonoBehavior should be attached to a GameObject and will represent the Haptic Device itself.
 //! One of these objects should be added to the scene corrisponding to each Haptic Device you intend the scene to connect to. 
 //! Additionally this object contains static declarations of the functions in the OHToUnityBridge dll, required for this asset to function.
-public class HapticPluginModified : MonoBehaviour  {
+public class HapticPluginModified : MonoBehaviour
+{
 
 
 	[Header("Configuration Attributes")]
 
 	public string configName = "Default Device";  //!< Filename of the Haptic Device Configuration. (Typically "Default Device")
-	public bool connect_On_Start = true;		//!< Should the script connect to haptic the moment it's created?
+	public string remotTargetIPAdress = "192.168.50.111";
+	public int remoteTargetPort = 123;
+	public bool connect_On_Start = true;        //!< Should the script connect to haptic the moment it's created?
 
 	[Range(0.0f, 1.0f)] public float PhysicsForceStrength = 0.333f; //!< Spring force coupling the haptic forces and the Unity Physics simualtion
-	[Range(0.0f,1.0f)] public float PhysicsForceDamping = 0.33f; //!< Damping force for the spring coupling the haptic forces and the Unity Physics simulation.
+	[Range(0.0f, 1.0f)] public float PhysicsForceDamping = 0.33f; //!< Damping force for the spring coupling the haptic forces and the Unity Physics simulation.
 
 	public bool shapesEnabled = true; //TODO FIXME Doesn't work yet.
 
@@ -43,49 +46,49 @@ public class HapticPluginModified : MonoBehaviour  {
 
 
 	[DisplayOnlyAttribute] public int hHD = -1;
-	[DisplayOnlyAttribute] public string device_SerialNumber = "-Not Connected-";	//!< (Readonly) Serial number of the haptic device.
+	[DisplayOnlyAttribute] public string device_SerialNumber = "-Not Connected-";   //!< (Readonly) Serial number of the haptic device.
 	[DisplayOnlyAttribute] public string device_Model = "-Not Connected-"; //!< (Readonly) Model of the haptic device
 
-	[DisplayOnlyAttribute] public Vector3 stylusPositionRaw;	//!< (Readonly) Stylus position, in device coordinates.
-	[DisplayOnlyAttribute] public Vector3 stylusVelocityRaw;	//!< (Readonly) Stylus velocity, in device coordinates.
-	[DisplayOnlyAttribute] public Matrix4x4 stylusTransformRaw;	//!< (Readonly) Stylus transform, in device coordinates.
-	[DisplayOnlyAttribute] public int[] Buttons;				//!< (Readonly) Array of buttons. 1 is pressed, 0 is unpressed.
-	[DisplayOnlyAttribute] public int inkwell;					//!<! (Readonly) 1 if inkwell button is triggered. 0 otherwise. (Not all devices have inkwells.)
+	[DisplayOnlyAttribute] public Vector3 stylusPositionRaw;    //!< (Readonly) Stylus position, in device coordinates.
+	[DisplayOnlyAttribute] public Vector3 stylusVelocityRaw;    //!< (Readonly) Stylus velocity, in device coordinates.
+	[DisplayOnlyAttribute] public Matrix4x4 stylusTransformRaw; //!< (Readonly) Stylus transform, in device coordinates.
+	[DisplayOnlyAttribute] public int[] Buttons;                //!< (Readonly) Array of buttons. 1 is pressed, 0 is unpressed.
+	[DisplayOnlyAttribute] public int inkwell;                  //!<! (Readonly) 1 if inkwell button is triggered. 0 otherwise. (Not all devices have inkwells.)
 
 
-	[DisplayOnlyAttribute] public Vector3 proxyPositionRaw;			//!< (Readonly) Proxy position, in device coordinates.
-	[DisplayOnlyAttribute] public Quaternion proxyOrientationRaw;	//!< (Readonly) Proxy Orientation, in device coordinates.
-	[DisplayOnlyAttribute] public Matrix4x4 proxyTransformRaw;		//!< (Readonly) Proxy Transform in device coordinates.
+	[DisplayOnlyAttribute] public Vector3 proxyPositionRaw;         //!< (Readonly) Proxy position, in device coordinates.
+	[DisplayOnlyAttribute] public Quaternion proxyOrientationRaw;   //!< (Readonly) Proxy Orientation, in device coordinates.
+	[DisplayOnlyAttribute] public Matrix4x4 proxyTransformRaw;      //!< (Readonly) Proxy Transform in device coordinates.
 	[DisplayOnlyAttribute] public Vector3 proxyNormalRaw;
 
-	 
+
 
 	#region DLL_Imports
-	[DllImport("OHToUnityBridge")] public static extern void getVersionString( StringBuilder dest, int len);  //!< Retreives the OpenHaptics version string.
+	[DllImport("OHToUnityBridge")] public static extern void getVersionString(StringBuilder dest, int len);  //!< Retreives the OpenHaptics version string.
 
 	// Setup Functions
-	[DllImport("OHToUnityBridge")] public static extern int	initDevice( string deviceName );	//!< Connects to and Initializes a haptic device.
-	[DllImport("OHToUnityBridge")] public static extern void getDeviceSN (string configName, StringBuilder dest, int len);	//!< Retrieves device serial number
-	[DllImport("OHToUnityBridge")] public static extern void getDeviceModel(string configName, StringBuilder dest, int len);	//!< Retrieves devices model name
-    [DllImport("OHToUnityBridge")] public static extern void startSchedulers();	//!< Starts the Open Haptic schedulers and assigns the required internal callbacks
+	[DllImport("OHToUnityBridge")] public static extern int initDevice(string deviceName);  //!< Connects to and Initializes a haptic device.
+	[DllImport("OHToUnityBridge")] public static extern void getDeviceSN(string configName, StringBuilder dest, int len);   //!< Retrieves device serial number
+	[DllImport("OHToUnityBridge")] public static extern void getDeviceModel(string configName, StringBuilder dest, int len);    //!< Retrieves devices model name
+	[DllImport("OHToUnityBridge")] public static extern void startSchedulers(); //!< Starts the Open Haptic schedulers and assigns the required internal callbacks
 
 	// Device Information
 	//! Retrieves the bounds created by the physical limitations of the device.
 	//! Equivialant to an `hlWorkspace` call.
-	[DllImport("OHToUnityBridge")] public static extern void getWorkspaceArea( string configName, double[] usable6, double[] max6);	
+	[DllImport("OHToUnityBridge")] public static extern void getWorkspaceArea(string configName, double[] usable6, double[] max6);
 
 	// Updates
-	[DllImport("OHToUnityBridge")] public static extern void getPosition( string configName, double[] position3);
-	[DllImport("OHToUnityBridge")] public static extern void getVelocity (string configName, double[] velocity3);
-	[DllImport("OHToUnityBridge")] public static extern void getTransform (string configName, double[] matrix16);
-	[DllImport("OHToUnityBridge")] public static extern void getButtons (string configName, int[] buttons4, ref int inkwell);
+	[DllImport("OHToUnityBridge")] public static extern void getPosition(string configName, double[] position3);
+	[DllImport("OHToUnityBridge")] public static extern void getVelocity(string configName, double[] velocity3);
+	[DllImport("OHToUnityBridge")] public static extern void getTransform(string configName, double[] matrix16);
+	[DllImport("OHToUnityBridge")] public static extern void getButtons(string configName, int[] buttons4, ref int inkwell);
 
 	// Force output
 	[DllImport("OHToUnityBridge")] public static extern void setForce(string configName, double[] lateral3, double[] torque3); //!< Adds an additional force to the haptic device. Can be eseed for scripted forces, but in most cases using an Effect is preferable. 
 
 	//! The haptic device and the unity gameobject are connected by a simulated spring. (Because Unity runs at a much slower framerate than is required for directly setting physics forces.)
 	//! This call sets the current anchor position of the spring.  Normally the HapticPlugin script would call this during its update.
-	[DllImport("OHToUnityBridge")] public static extern void setSpringAnchorPosition (string configName, double[] position3, double[] velocity3);
+	[DllImport("OHToUnityBridge")] public static extern void setSpringAnchorPosition(string configName, double[] position3, double[] velocity3);
 	//! The haptic device and the unity gameobject are connected by a simulated spring. (Because Unity runs at a much slower framerate than is required for directly setting physics forces.)
 	//! This call sets the current stiffness of the spring. 
 	[DllImport("OHToUnityBridge")] public static extern void setSpringStiffness(string configName, double stiffness, double damping);
@@ -94,12 +97,12 @@ public class HapticPluginModified : MonoBehaviour  {
 	//! Allocates an OH touchable shape. Typically called by the HapticPlugin object.
 	//! \return the handle ID for the newly created shape.
 	[DllImport("OHToUnityBridge")] public static extern void shape_define(int id, string name, double[] ParticleSystemVertexStreams, int[] triangles, int vertCount, int triCount);
-	[DllImport("OHToUnityBridge")] public static extern void shape_setTransform (int id, double[] matrix16); //!< Sets the transform of an already defined touchable shape.  Typically called by HapticPlugin update function.
+	[DllImport("OHToUnityBridge")] public static extern void shape_setTransform(int id, double[] matrix16); //!< Sets the transform of an already defined touchable shape.  Typically called by HapticPlugin update function.
 	[DllImport("OHToUnityBridge")] public static extern void shape_remove(int id);  //!< Removes an already defined touchable shape.
 	[DllImport("OHToUnityBridge")] public static extern void shape_removeAll(); //!< Removes **all** touchable shapes.
-	//! If the Proxy Stylus is currently touching a touchable object, this will retrieve the ID and the current depth (pressure) of the stylus.
-	//! \return true if currently touching an object.
-	[DllImport("OHToUnityBridge")] public static extern bool shape_getTouched(string configName, ref int shapeID, ref double depth); 
+																				//! If the Proxy Stylus is currently touching a touchable object, this will retrieve the ID and the current depth (pressure) of the stylus.
+																				//! \return true if currently touching an object.
+	[DllImport("OHToUnityBridge")] public static extern bool shape_getTouched(string configName, ref int shapeID, ref double depth);
 	//! Sets the parameters of a touchable object.
 	//! Refer to OH documentation for the meaning of the parameters.  
 	//! See also the helper script HapticSurface
@@ -116,16 +119,16 @@ public class HapticPluginModified : MonoBehaviour  {
 
 
 	//! Called every update frame, **after** all the shape positions and parameters have been updated.
-	[DllImport("OHToUnityBridge")] public static extern void shape_render (string configName,double[] matrix16);
+	[DllImport("OHToUnityBridge")] public static extern void shape_render(string configName, double[] matrix16);
 
-	[DllImport("OHToUnityBridge")] public static extern void shape_enableShapeRendering ();
-	[DllImport("OHToUnityBridge")] public static extern void shape_disableShapeRendering ();
+	[DllImport("OHToUnityBridge")] public static extern void shape_enableShapeRendering();
+	[DllImport("OHToUnityBridge")] public static extern void shape_disableShapeRendering();
 
 
 	[DllImport("OHToUnityBridge")] public static extern void getProxyPosition(string configName, double[] position3);
-	[DllImport("OHToUnityBridge")] public static extern void getProxyRotation (string configName, double[] quaternion4);
+	[DllImport("OHToUnityBridge")] public static extern void getProxyRotation(string configName, double[] quaternion4);
 	[DllImport("OHToUnityBridge")] public static extern void getProxyTouchNormal(string configName, double[] normal3);
-	[DllImport("OHToUnityBridge")] public static extern void getProxyTransform (string configName, double[] matrix16);
+	[DllImport("OHToUnityBridge")] public static extern void getProxyTransform(string configName, double[] matrix16);
 
 
 	[DllImport("OHToUnityBridge")] public static extern void effects_resetAll(); //!< Delete all Effects.
@@ -133,7 +136,7 @@ public class HapticPluginModified : MonoBehaviour  {
 	//! Allocate a new OpenHaptics Effect
 	//! \return The handle ID for the new effect.
 	[DllImport("OHToUnityBridge")] public static extern int effects_assignEffect(string configName);
-	[DllImport("OHToUnityBridge")] public static extern void effects_startEffect(string configName, int ID);	
+	[DllImport("OHToUnityBridge")] public static extern void effects_startEffect(string configName, int ID);
 	[DllImport("OHToUnityBridge")] public static extern void effects_stopEffect(string configName, int ID);
 
 	//! Update the parameters of the effect.
@@ -143,7 +146,7 @@ public class HapticPluginModified : MonoBehaviour  {
 	//! \param frequency Vibration frequency.  Used for **Vibrate**
 	//! \param position3 A point (defined as an array of 3 doubles) defining the focal point of the effect. Used for **Spring**
 	//! \param direction3 A unit vector (defined as an array of 3 doubles) defining the direction of the effect. Used for **Vibrate**, and **Constant**
-	[DllImport("OHToUnityBridge")] public static extern void effects_settings (string configName, int ID, double gain, double magnitude, double frequency, double[] position3, double[] direction3);
+	[DllImport("OHToUnityBridge")] public static extern void effects_settings(string configName, int ID, double gain, double magnitude, double frequency, double[] position3, double[] direction3);
 	[DllImport("OHToUnityBridge")] public static extern void effects_deleteEffect(string configName, int ID);
 
 	//! Assigns the *type* of the effect.
@@ -195,23 +198,27 @@ public class HapticPluginModified : MonoBehaviour  {
 	private IPEndPoint ipEndPoint;
 	private UdpClient udpClient;
 	private byte[] sendByte;
-	private Vector3 incision = new Vector3(250, -90, 180);
+	private Vector3 incision = new Vector3(350, -60, 300);
 	private Vector3 offset = new Vector3(0, -100, 100);
-	private float distance = 100;
+	private Vector3 rcm = new Vector3(350, -80, 270);
+	//private Vector3 offset = new Vector3(0, 0, 0);
+	private float distance = 300;
+	private float toollength = 200;
+
 	private Matrix4x4 iniOrientation;
 	private Matrix4x4 screenOrientation;
 	private float screenAngle;
-	private float motionScalingFactor = 0.5f;
+	private float motionScalingFactor = 1.0f;
 
 	// Use this for initialization
-	void OnEnable () 
+	void OnEnable()
 	{
 		Buttons = new int[4];
 
 		// Get Version String
-		StringBuilder sb = new StringBuilder (256);
-		getVersionString (sb, sb.Capacity);
-		Debug.Log ("Haptic Plugin Version : " + sb.ToString ());
+		StringBuilder sb = new StringBuilder(256);
+		getVersionString(sb, sb.Capacity);
+		Debug.Log("Haptic Plugin Version : " + sb.ToString());
 
 		if (connect_On_Start)
 		{
@@ -227,29 +234,29 @@ public class HapticPluginModified : MonoBehaviour  {
 			}
 		}
 
-		touchableObjects =  GameObject.FindGameObjectsWithTag("Touchable") as GameObject[];  //FIXME  Does this fail gracefully?
+		touchableObjects = GameObject.FindGameObjectsWithTag("Touchable") as GameObject[];  //FIXME  Does this fail gracefully?
 
-		hapticErrorQueue = new Queue ();
+		hapticErrorQueue = new Queue();
 
 	}
-    void Start()
-    {
-		if (isIncorrectVersion)	return;
+	void Start()
+	{
+		if (isIncorrectVersion) return;
 
 
-        startSchedulers();
-		if(this.shapesEnabled) setupShapes();
-		
+		startSchedulers();
+		if (this.shapesEnabled) setupShapes();
+
 		//modified
 		getPosition(configName, iniPosInput);
-		ipEndPoint = new IPEndPoint(IPAddress.Parse("192.168.50.111"), 123); // change server ip here
+		ipEndPoint = new IPEndPoint(IPAddress.Parse(remotTargetIPAdress), remoteTargetPort); // change server ip here
 		udpClient = new UdpClient();
 		iniOrientation.SetRow(0, new Vector4(-1, 0, 0, 0));
 		iniOrientation.SetRow(1, new Vector4(0, 0, 1, 0));
 		iniOrientation.SetRow(2, new Vector4(0, 1, 0, 0));
 		iniOrientation.SetRow(3, new Vector4(0, 0, 0, 1));
 
-		screenAngle = 65*Mathf.Deg2Rad;
+		screenAngle = 65 * Mathf.Deg2Rad;
 
 		screenOrientation.SetRow(0, new Vector4(1, 0, 0, 0));
 		screenOrientation.SetRow(1, new Vector4(0, Mathf.Cos(screenAngle), Mathf.Sin(screenAngle), 0));
@@ -263,45 +270,45 @@ public class HapticPluginModified : MonoBehaviour  {
 
 	void OnDestroy()
 	{
-		if (isIncorrectVersion)	return;
+		if (isIncorrectVersion) return;
 
 		Debug.Log("Disconnecting from Haptic");
 		disconnectAllDevices();
 	}
 	void OnDisable()
 	{
-		if (isIncorrectVersion)	return;
+		if (isIncorrectVersion) return;
 
 		Debug.Log("OnDisable");
-		double[] zero = {0.0,0.0,0.0};
+		double[] zero = { 0.0, 0.0, 0.0 };
 		setSpringStiffness(configName, 0.0, 0.0);
 		setForce(configName, zero, zero);
 		shape_removeAll();
 		effects_resetAll();
-			}
+	}
 
 	void OnApplicationQuit()
 	{
-		if (isIncorrectVersion)	return;
+		if (isIncorrectVersion) return;
 		Debug.Log("OnApplicationQuit: Disconnecting from Haptic");
 
 
-		double[] zero = {0.0,0.0,0.0};
+		double[] zero = { 0.0, 0.0, 0.0 };
 		setSpringStiffness(configName, 0.0, 0.0);
 		setForce(configName, zero, zero);
 		shape_removeAll();
 		effects_resetAll();
 
 		double[] M = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-		shape_render(configName, M); 
+		shape_render(configName, M);
 	}
-		
+
 
 
 	bool initializeHapticDevice()
 	{
 		bool success = false;
-		hHD = initDevice (configName);
+		hHD = initDevice(configName);
 		if (hHD < 0)
 		{
 			//Error. 
@@ -316,17 +323,18 @@ public class HapticPluginModified : MonoBehaviour  {
 				isIncorrectVersion = true;
 				hapticErrorQueue.Enqueue(System.DateTime.Now.ToLongTimeString() + " - " + "Incorrect Open Haptic Version.");
 			}
-				
 
-		} else
+
+		}
+		else
 		{
 			{
-				StringBuilder sb = new StringBuilder (256);
+				StringBuilder sb = new StringBuilder(256);
 				getDeviceSN(configName, sb, sb.Capacity);
 				device_SerialNumber = sb.ToString();
 			}
 			{
-				StringBuilder sb = new StringBuilder (256);
+				StringBuilder sb = new StringBuilder(256);
 				getDeviceModel(configName, sb, sb.Capacity);
 				device_Model = sb.ToString();
 			}
@@ -337,26 +345,26 @@ public class HapticPluginModified : MonoBehaviour  {
 			showNoDevicePopup = false;
 			isIncorrectVersion = false;
 		}
-			
+
 		return success;
 	}
 
 	// Update is called once per frame
-	void FixedUpdate() 
+	void FixedUpdate()
 	{
-		if (isIncorrectVersion)	return;
+		if (isIncorrectVersion) return;
 		checkErrors();
 
 		if (hHD < 0)
 			return;
-	
-		double[] M16 = MatrixToDoubleArray(this.transform.worldToLocalMatrix);	
+
+		double[] M16 = MatrixToDoubleArray(this.transform.worldToLocalMatrix);
 		shape_render(configName, M16);
 
 		if (shapesEnabled)
 		{
 			updateShapes();
-	
+
 			int shapeID = -1;
 			double depth = 0.0;
 
@@ -366,33 +374,34 @@ public class HapticPluginModified : MonoBehaviour  {
 				{
 					for (int ii = 0; ii < touchableObjects.Length; ii++)
 					{
-						if (shapeID == touchableObjects [ii].GetInstanceID())
+						if (shapeID == touchableObjects[ii].GetInstanceID())
 						{
-							touching = touchableObjects [ii];
+							touching = touchableObjects[ii];
 							break;
 						}
 					}
 
 				}
-			} else
+			}
+			else
 				touching = null;
 
 			touchingDepth = (float)depth;
 		}
-        
+
 		if (safetyMode)
 		{
 			safeUpdateManipulator();
 			return;
 		}
-         
+
 
 		// Pull the data from the device
 		updateDevice();
 
-   
+
 		// Update the gamestate
-	
+
 		//Update the physics manipulator and whatnot.
 		updateManipulator();
 
@@ -404,8 +413,8 @@ public class HapticPluginModified : MonoBehaviour  {
 		Vector3 screenRel;
 		Quaternion rhcQ;
 		string message;
-		float dist = distance/2;
-		
+		float dist = distance / 2;
+
 
 
 
@@ -418,14 +427,14 @@ public class HapticPluginModified : MonoBehaviour  {
 		int lrId;
 		Matrix4x4 rotRaw = new Matrix4x4();
 		Matrix4x4 Rot;
-		
+
 
 		if (configName == "Left Device")
-        {
+		{
 			relPos[0] = stylusPositionRaw.x - iniPosInput[0];
 			relPos[1] = stylusPositionRaw.y - iniPosInput[1];
 			relPos[2] = stylusPositionRaw.z - iniPosInput[2];
-			
+
 			screenRel.x = (float)relPos[0] - offset.x - dist;
 			screenRel.y = (float)relPos[2] - offset.y;//relPos[2] is y
 			screenRel.z = (float)relPos[1] - offset.z;//relPos[1] is z
@@ -445,11 +454,11 @@ public class HapticPluginModified : MonoBehaviour  {
 			//Debug.Log(worldPos);
 			//Debug.Log(worldEuler);
 
-		
+
 			lrId = 0;
 		}
 		else if (configName == "Right Device")
-        {
+		{
 			relPos[0] = stylusPositionRaw.x - iniPosInput[0];
 			relPos[1] = stylusPositionRaw.y - iniPosInput[1];
 			relPos[2] = stylusPositionRaw.z - iniPosInput[2];
@@ -468,7 +477,7 @@ public class HapticPluginModified : MonoBehaviour  {
 			lrId = 1;
 		}
 		else
-        {
+		{
 			/*worldPos.x = (float)relPos[0];
 			worldPos.y = (float)relPos[1];
 			worldPos.z = (float)relPos[2];
@@ -483,7 +492,7 @@ public class HapticPluginModified : MonoBehaviour  {
 
 		}
 		//Debug.Log(worldPos);
-		
+
 		string str1 = worldPos.x.ToString() + "," + worldPos.y.ToString() + "," + worldPos.z.ToString();
 
 		//Debug.Log(stylusRotationWorld.ToString());
@@ -519,26 +528,164 @@ public class HapticPluginModified : MonoBehaviour  {
 		rotRaw.SetRow(1, R2);
 		rotRaw.SetRow(2, R3);
 		rotRaw.SetRow(3, R4);
-		Rot =  iniOrientation* rotRaw*screenOrientation ;
+		Rot = iniOrientation * rotRaw * screenOrientation.transpose;
 		//print(iniOrientation.ToString());
 		//print(rotRaw.ToString());
 		//print(rotRaw[9].ToString());
 		//string str2 = euler.ToString();
-		message =  lrId.ToString() + "," + str1 + "," ;
+
+		//changable variables
+		double sf = 0.03;//force scaling factor
+		double fd = 18000;//distance where force starts to work
+		//variables used for calculation of force
+		Vector3 x1;
+		Vector3 x2;
+		Vector3 x3;
+		Vector3 perpend;
+		Vector3 forcedir;
+		Vector3 direction;
+		Vector3 unit;
+
+		double t;
+		double dc;
+
+		unit.x = 0;
+		unit.y = 0;
+		unit.z = 1;
+		direction = Rot.MultiplyVector(unit);//world orientation 
+											 //Debug.Log(direction.x);
+
+		x1 = worldPos;
+
+		//Debug.Log(Buttons[0].ToString());// Buttons[0] up button front, Buttons[1] up button back
+
+
+		if (configName == "Left Device")
+		{
+			double[] zero = { 0.0, 0.0, 0.0 };
+			double[] force = { 0.0, 0.0, 0.0 }; //right x up y front z
+
+			x2.x = x1.x + direction.x;
+			x2.y = x1.y + direction.y;
+			x2.z = x1.z + direction.z;
+
+			x3.x = rcm.x - x1.x;
+			x3.y = rcm.y - x1.y;
+			x3.z = rcm.z - x1.z;
+
+			t = Vector3.Dot(x3, direction);
+
+			perpend.x = x1.x + (float)t * direction.x;
+			perpend.y = x1.y + (float)t * direction.y;
+			perpend.z = x1.z + (float)t * direction.z;
+			forcedir.x = rcm.x - perpend.x;
+			forcedir.y = rcm.y - perpend.y;
+			forcedir.z = rcm.z - perpend.z;
+			forcedir = screenOrientation.transpose.MultiplyVector(forcedir);
+			//Debug.Log(perpend.ToString());
+			//Debug.Log(forcedir.ToString());
+
+
+
+			dc = (worldPos.x - rcm.x) * (worldPos.x - rcm.x) + (worldPos.y - rcm.y) * (worldPos.y - rcm.y) + (worldPos.z - rcm.z) * (worldPos.z - rcm.z);
+			//Debug.Log(dc.ToString());
+			if (worldPos.z < rcm.z && dc < fd)
+			{
+				force[0] = sf * forcedir.x;
+				force[1] = sf * forcedir.z;
+				force[2] = sf * forcedir.y;
+				if (force[0] < 3 && force[1] < 3 && force[2] < 3)
+				{
+					setForce(configName, force, zero);
+
+				}
+				else
+				{
+					setForce(configName, zero, zero);
+				}
+				//Debug.Log("low");
+			}
+			else
+			{
+				setForce(configName, zero, zero);
+			}
+
+		}
+		else if (configName == "Right Device")
+        {
+			double[] zero = { 0.0, 0.0, 0.0 };
+			double[] force = { 0.0, 0.0, 0.0 }; //right x up y front z
+
+			x2.x = x1.x + direction.x;
+			x2.y = x1.y + direction.y;
+			x2.z = x1.z + direction.z;
+
+			x3.x = rcm.x - x1.x;
+			x3.y = rcm.y - x1.y;
+			x3.z = rcm.z - x1.z;
+
+			t = Vector3.Dot(x3, direction);
+
+			perpend.x = x1.x + (float)t * direction.x;
+			perpend.y = x1.y + (float)t * direction.y;
+			perpend.z = x1.z + (float)t * direction.z;
+			forcedir.x = rcm.x - perpend.x;
+			forcedir.y = rcm.y - perpend.y;
+			forcedir.z = rcm.z - perpend.z;
+			forcedir = screenOrientation.transpose.MultiplyVector(forcedir);
+			//Debug.Log(perpend.ToString());
+			//Debug.Log(forcedir.ToString());
+
+
+
+			dc = (worldPos.x - rcm.x) * (worldPos.x - rcm.x) + (worldPos.y - rcm.y) * (worldPos.y - rcm.y) + (worldPos.z - rcm.z) * (worldPos.z - rcm.z);
+			//Debug.Log(dc.ToString());
+			if (worldPos.z < rcm.z && dc < fd)
+			{
+				force[0] = sf * forcedir.x;
+				force[1] = sf * forcedir.z;
+				force[2] = sf * forcedir.y;
+				if (force[0] < 3 && force[1] < 3 && force[2] < 3)
+				{
+					setForce(configName, force, zero);
+
+				}
+				else
+				{
+					setForce(configName, zero, zero);
+				}
+				//Debug.Log("low");
+			}
+			else
+			{
+				setForce(configName, zero, zero);
+			}
+		}
+        else
+        {
+	
+        }
+
+
+
+
+
+		message = lrId.ToString() + "," + str1 + ",";
 		for (int i = 0; i < 11; i++)
 		{
-			if (i % 4!= 3 && i != 10)
+			if (i % 4 != 3 && i != 10)
 			{
-				message = message+ Rot[i] +",";
+				message = message + Rot[i] + ",";
 			}
 			else if (i == 10)
-            {
+			{
 				message = message + Rot[i];
 			}
-			
+
 
 
 		}
+		message += "," + Buttons[0].ToString() + "," + Buttons[1].ToString();// add button reading
 		SendUDPData(message);
 		Debug.Log(message);
 		/*StringBuilder sbtest = new StringBuilder(256);
@@ -546,7 +693,7 @@ public class HapticPluginModified : MonoBehaviour  {
 		getDeviceSN("Default Device", sbtest, sbtest.Capacity);
 		device_SerialNumber_Test = sbtest.ToString();
 		print(device_SerialNumber_Test);*/
-		
+
 
 		checkErrors();
 	}
@@ -565,9 +712,9 @@ public class HapticPluginModified : MonoBehaviour  {
 		return safetyMode;
 	}
 
-		
-	private static Quaternion QuaternionFromMatrix(Matrix4x4 m) 
-	{ 
+
+	private static Quaternion QuaternionFromMatrix(Matrix4x4 m)
+	{
 		return Quaternion.LookRotation(m.GetColumn(2), m.GetColumn(1));
 	}
 
@@ -575,7 +722,7 @@ public class HapticPluginModified : MonoBehaviour  {
 
 	private void checkErrors()
 	{
-		StringBuilder sb = new StringBuilder (256);
+		StringBuilder sb = new StringBuilder(256);
 		int code = getHDError(sb, sb.Capacity);
 		if (code != 0)
 		{
@@ -596,7 +743,7 @@ public class HapticPluginModified : MonoBehaviour  {
 
 	private void updateDevice()
 	{
-		if (isIncorrectVersion)	return;
+		if (isIncorrectVersion) return;
 
 		// Retrieve the raw values
 		double[] posInput = new double[3];
@@ -604,69 +751,69 @@ public class HapticPluginModified : MonoBehaviour  {
 		getPosition(configName, posInput);
 		getVelocity(configName, velInput);
 
-		stylusPositionRaw.x = (float)posInput [0];
-		stylusPositionRaw.y = (float)posInput [1];
-		stylusPositionRaw.z = (float)posInput [2];
+		stylusPositionRaw.x = (float)posInput[0];
+		stylusPositionRaw.y = (float)posInput[1];
+		stylusPositionRaw.z = (float)posInput[2];
 
-		stylusVelocityRaw.x = (float)velInput [0];
-		stylusVelocityRaw.y = (float)velInput [1];
-		stylusVelocityRaw.z = (float)velInput [2];
+		stylusVelocityRaw.x = (float)velInput[0];
+		stylusVelocityRaw.y = (float)velInput[1];
+		stylusVelocityRaw.z = (float)velInput[2];
 
 		double[] oriInput = new double[4];
 		getProxyPosition(configName, posInput);
-		proxyPositionRaw.x = (float)posInput [0];
-		proxyPositionRaw.y = (float)posInput [1];
-		proxyPositionRaw.z = (float)posInput [2];
+		proxyPositionRaw.x = (float)posInput[0];
+		proxyPositionRaw.y = (float)posInput[1];
+		proxyPositionRaw.z = (float)posInput[2];
 
 		getProxyRotation(configName, oriInput);
-		proxyOrientationRaw.x = (float)oriInput [0];
-		proxyOrientationRaw.y = (float)oriInput [1];
-		proxyOrientationRaw.z = (float)oriInput [2];
-		proxyOrientationRaw.w = (float)oriInput [3];
+		proxyOrientationRaw.x = (float)oriInput[0];
+		proxyOrientationRaw.y = (float)oriInput[1];
+		proxyOrientationRaw.z = (float)oriInput[2];
+		proxyOrientationRaw.w = (float)oriInput[3];
 
 
 		{
 			double[] matInput = new double[16];
 			getTransform(configName, matInput);
 			Matrix4x4 mat;
-			mat.m00 = (float)matInput [0];
-			mat.m01 = (float)matInput [1];
-			mat.m02 = (float)matInput [2];
-			mat.m03 = (float)matInput [3];
-			mat.m10 = (float)matInput [4];
-			mat.m11 = (float)matInput [5];
-			mat.m12 = (float)matInput [6];
-			mat.m13 = (float)matInput [7];
-			mat.m20 = (float)matInput [8];
-			mat.m21 = (float)matInput [9];
-			mat.m22 = (float)matInput [10];
-			mat.m23 = (float)matInput [11];
-			mat.m30 = (float)matInput [12];
-			mat.m31 = (float)matInput [13];
-			mat.m32 = (float)matInput [14];
-			mat.m33 = (float)matInput [15];
+			mat.m00 = (float)matInput[0];
+			mat.m01 = (float)matInput[1];
+			mat.m02 = (float)matInput[2];
+			mat.m03 = (float)matInput[3];
+			mat.m10 = (float)matInput[4];
+			mat.m11 = (float)matInput[5];
+			mat.m12 = (float)matInput[6];
+			mat.m13 = (float)matInput[7];
+			mat.m20 = (float)matInput[8];
+			mat.m21 = (float)matInput[9];
+			mat.m22 = (float)matInput[10];
+			mat.m23 = (float)matInput[11];
+			mat.m30 = (float)matInput[12];
+			mat.m31 = (float)matInput[13];
+			mat.m32 = (float)matInput[14];
+			mat.m33 = (float)matInput[15];
 			stylusTransformRaw = mat.transpose;
 		}
 		{
 			double[] matInput = new double[16];
 			getProxyTransform(configName, matInput);
 			Matrix4x4 mat;
-			mat.m00 = (float)matInput [0];
-			mat.m01 = (float)matInput [1];
-			mat.m02 = (float)matInput [2];
-			mat.m03 = (float)matInput [3];
-			mat.m10 = (float)matInput [4];
-			mat.m11 = (float)matInput [5];
-			mat.m12 = (float)matInput [6];
-			mat.m13 = (float)matInput [7];
-			mat.m20 = (float)matInput [8];
-			mat.m21 = (float)matInput [9];
-			mat.m22 = (float)matInput [10];
-			mat.m23 = (float)matInput [11];
-			mat.m30 = (float)matInput [12];
-			mat.m31 = (float)matInput [13];
-			mat.m32 = (float)matInput [14];
-			mat.m33 = (float)matInput [15];
+			mat.m00 = (float)matInput[0];
+			mat.m01 = (float)matInput[1];
+			mat.m02 = (float)matInput[2];
+			mat.m03 = (float)matInput[3];
+			mat.m10 = (float)matInput[4];
+			mat.m11 = (float)matInput[5];
+			mat.m12 = (float)matInput[6];
+			mat.m13 = (float)matInput[7];
+			mat.m20 = (float)matInput[8];
+			mat.m21 = (float)matInput[9];
+			mat.m22 = (float)matInput[10];
+			mat.m23 = (float)matInput[11];
+			mat.m30 = (float)matInput[12];
+			mat.m31 = (float)matInput[13];
+			mat.m32 = (float)matInput[14];
+			mat.m33 = (float)matInput[15];
 			proxyTransformRaw = mat.transpose;
 		}
 
@@ -680,7 +827,8 @@ public class HapticPluginModified : MonoBehaviour  {
 		{
 			stylusMatrixWorld = gameObject.transform.localToWorldMatrix * proxyTransformRaw;
 			shape_enableShapeRendering();
-		} else
+		}
+		else
 		{
 			stylusMatrixWorld = gameObject.transform.localToWorldMatrix * stylusTransformRaw;
 			shape_disableShapeRendering();
@@ -691,15 +839,15 @@ public class HapticPluginModified : MonoBehaviour  {
 		stylusVelocityWorld = gameObject.transform.InverseTransformVector(stylusVelocityRaw);
 
 	}
-		
+
 
 	private GameObject previousManipulator = null;
 
 	private void updateManipulator()
 	{
-		if (this.hapticManipulator == null )
+		if (this.hapticManipulator == null)
 		{
-			double[] zero = {0.0,0.0,0.0};
+			double[] zero = { 0.0, 0.0, 0.0 };
 			setSpringStiffness(configName, 0.0, 0.0);
 			return;
 		}
@@ -748,7 +896,7 @@ public class HapticPluginModified : MonoBehaviour  {
 			force *= 1000;
 			force *= (0.15f); // Magic number So that manupilator with mass 1.0 feels right.
 
-			Vector3 V = new Vector3 ();
+			Vector3 V = new Vector3();
 			V = (body.velocity);
 			V *= V.magnitude;
 
@@ -759,7 +907,7 @@ public class HapticPluginModified : MonoBehaviour  {
 		}
 
 		//Rotation
-	
+
 		{
 			// Apply rotation to this item.
 			Vector3 torque = DetermineTorque(body);
@@ -782,12 +930,12 @@ public class HapticPluginModified : MonoBehaviour  {
 	{
 		if (body == null)
 			return Vector3.zero;
-		
+
 		Quaternion AngleDifference = stylusRotationWorld * Quaternion.Inverse(body.rotation);
 
 		float AngleToCorrect = Quaternion.Angle(body.rotation, stylusRotationWorld);
 		Vector3 Perpendicular = Vector3.Cross(transform.up, transform.forward);
-		if (Vector3.Dot(stylusRotationWorld*Vector3.forward, Perpendicular) < 0)
+		if (Vector3.Dot(stylusRotationWorld * Vector3.forward, Perpendicular) < 0)
 			AngleToCorrect *= -1;
 		Quaternion Correction = Quaternion.AngleAxis(AngleToCorrect, transform.up);
 
@@ -809,7 +957,7 @@ public class HapticPluginModified : MonoBehaviour  {
 	// Put the cursor on the device so it doesn't jump.
 	public void safeUpdateManipulator()
 	{
-		if (isIncorrectVersion)	return;
+		if (isIncorrectVersion) return;
 
 		//Debug.unityLogger.Log("Safing the Manipulator.");
 
@@ -819,14 +967,14 @@ public class HapticPluginModified : MonoBehaviour  {
 		if (body == null)
 			return;
 		updateDevice();
-		
+
 		{
 			body.position = stylusPositionWorld;
 			body.rotation = stylusRotationWorld;
 			body.velocity = Vector3.zero;
 		}
 
-		double[] zero = {0.0,0.0,0.0};
+		double[] zero = { 0.0, 0.0, 0.0 };
 		setSpringStiffness(configName, 0.0, 0.0);
 		setForce(configName, zero, zero);
 	}
@@ -835,16 +983,16 @@ public class HapticPluginModified : MonoBehaviour  {
 
 	void setupShapes()
 	{
-		if (isIncorrectVersion)	return;
+		if (isIncorrectVersion) return;
 
 		touchableObjects = GameObject.FindGameObjectsWithTag("Touchable") as GameObject[];
 
 		for (int ii = 0; ii < touchableObjects.Length; ii++)
 		{
-			int shapeID = touchableObjects [ii].GetInstanceID();
-			string name = touchableObjects [ii].name;
+			int shapeID = touchableObjects[ii].GetInstanceID();
+			string name = touchableObjects[ii].name;
 
-			GameObject go = touchableObjects [ii];
+			GameObject go = touchableObjects[ii];
 			Mesh mesh = null;
 
 			// If the object has a collision mesh, use that.
@@ -856,10 +1004,10 @@ public class HapticPluginModified : MonoBehaviour  {
 			if (mesh == null)
 			{
 				MeshFilter filter = go.GetComponent<MeshFilter>();
-				if( filter != null )
+				if (filter != null)
 					mesh = filter.mesh;
 			}
-		
+
 			// Vectors need to be converted to array of primatives. 
 			// Triangles already are an array of ints.
 			if (mesh != null)
@@ -878,19 +1026,19 @@ public class HapticPluginModified : MonoBehaviour  {
 
 	void updateShapes()
 	{
-		if (isIncorrectVersion)	return;
+		if (isIncorrectVersion) return;
 
 		GameObject[] myObjects = GameObject.FindGameObjectsWithTag("Touchable") as GameObject[];
 
 		for (int ii = 0; ii < myObjects.Length; ii++)
 		{
-			int shapeID = myObjects [ii].GetInstanceID();
+			int shapeID = myObjects[ii].GetInstanceID();
 
-			Matrix4x4 M = myObjects [ii].transform.localToWorldMatrix;
+			Matrix4x4 M = myObjects[ii].transform.localToWorldMatrix;
 
 			M = this.transform.worldToLocalMatrix * M;
 
-			double[] M16 = MatrixToDoubleArray(M);		
+			double[] M16 = MatrixToDoubleArray(M);
 
 			shape_setTransform(shapeID, M16);
 		}
@@ -898,15 +1046,15 @@ public class HapticPluginModified : MonoBehaviour  {
 
 	//Convert Vector3[] to double[]  
 	//Used by setupShapes to cook the vertex array of a mesh.
-	private static double[] Vector3ArrayToDoubleArray(Vector3[] inVectors) 
+	private static double[] Vector3ArrayToDoubleArray(Vector3[] inVectors)
 	{
 		double[] outDoubles = new double[inVectors.Length * 3];
 
-		for (int ii=0; ii<inVectors.Length; ii++)
+		for (int ii = 0; ii < inVectors.Length; ii++)
 		{
-			outDoubles[3*ii + 0] = inVectors[ii].x;
-			outDoubles[3*ii + 1] = inVectors[ii].y;
-			outDoubles[3*ii + 2] = inVectors[ii].z;
+			outDoubles[3 * ii + 0] = inVectors[ii].x;
+			outDoubles[3 * ii + 1] = inVectors[ii].y;
+			outDoubles[3 * ii + 2] = inVectors[ii].z;
 		}
 
 		return outDoubles;
@@ -916,25 +1064,25 @@ public class HapticPluginModified : MonoBehaviour  {
 	{
 		double[] out16 = new double[16];
 
-		out16 [0] = M.m00;
-		out16 [1] = M.m10;
-		out16 [2] = M.m20;
-		out16 [3] = M.m30;
+		out16[0] = M.m00;
+		out16[1] = M.m10;
+		out16[2] = M.m20;
+		out16[3] = M.m30;
 
-		out16 [4] = M.m01;
-		out16 [5] = M.m11;
-		out16 [6] = M.m21;
-		out16 [7] = M.m31;
+		out16[4] = M.m01;
+		out16[5] = M.m11;
+		out16[6] = M.m21;
+		out16[7] = M.m31;
 
-		out16 [8] = M.m02;
-		out16 [9] = M.m12;
-		out16 [10] =M.m22;
-		out16 [11] =M.m32;
+		out16[8] = M.m02;
+		out16[9] = M.m12;
+		out16[10] = M.m22;
+		out16[11] = M.m32;
 
-		out16 [12] =M.m03;
-		out16 [13] =M.m13;
-		out16 [14] =M.m23;
-		out16 [15] =M.m33;
+		out16[12] = M.m03;
+		out16[13] = M.m13;
+		out16[14] = M.m23;
+		out16[15] = M.m33;
 		/*
 		out16 [0] = M.m00;
 		out16 [1] = M.m01;
@@ -972,59 +1120,62 @@ public class HapticPluginModified : MonoBehaviour  {
 	}
 
 
-	private Rect windowRect = new Rect (20, 20, 350, 125);
-	void OnGUI ()
+	private Rect windowRect = new Rect(20, 20, 350, 125);
+	void OnGUI()
 	{
 		if (showOldVersionPopup)
 			windowRect = GUI.Window(0, windowRect, OldVersionDialogWindow, "Out-of-date OpenHaptics version.");
-		else if(showNoDevicePopup)
+		else if (showNoDevicePopup)
 			windowRect = GUI.Window(0, windowRect, NoDeviceDialogWindow, "Haptic Device Not Found.");
 
 	}
 
 	// This is the actual window.
-	void NoDeviceDialogWindow (int windowID)
+	void NoDeviceDialogWindow(int windowID)
 	{
 		float y = 30;
 
-		GUI.Label(new Rect(5,y, windowRect.width, 20), "Could not find haptic device named \"" + configName + "\""); y += 30;
+		GUI.Label(new Rect(5, y, windowRect.width, 20), "Could not find haptic device named \"" + configName + "\""); y += 30;
 
-		if(GUI.Button(new Rect(windowRect.width * 0.33f,y, windowRect.width * 0.33f, 20), "OK"))
+		if (GUI.Button(new Rect(windowRect.width * 0.33f, y, windowRect.width * 0.33f, 20), "OK"))
 		{
 			showNoDevicePopup = false;
-		} y += 30;
+		}
+		y += 30;
 
-		if(GUI.Button(new Rect(windowRect.width * 0.33f,y, windowRect.width * 0.33f,20), "Exit"))
+		if (GUI.Button(new Rect(windowRect.width * 0.33f, y, windowRect.width * 0.33f, 20), "Exit"))
 		{
 			Application.Quit();
 			showNoDevicePopup = false;
-			#if UNITY_EDITOR
+#if UNITY_EDITOR
 			UnityEditor.EditorApplication.isPlaying = false;
-			#endif
-		} y += 30;
+#endif
+		}
+		y += 30;
 	}
 	void OldVersionDialogWindow(int windowID)
 	{
 		// Get Version String
-		StringBuilder sb = new StringBuilder (256);
-		getVersionString (sb, sb.Capacity);
+		StringBuilder sb = new StringBuilder(256);
+		getVersionString(sb, sb.Capacity);
 
-		string ver = sb.ToString().Substring( sb.ToString().IndexOf("OpenHapticsVersion=") + "OpenHapticsVersion=".Length );
-	
+		string ver = sb.ToString().Substring(sb.ToString().IndexOf("OpenHapticsVersion=") + "OpenHapticsVersion=".Length);
+
 
 		float y = 30;
 
-		GUI.Label(new Rect(5,y, windowRect.width, 20), "Unity Plugin requires OpenHaptics version 3.50.0"); y += 30;
-		GUI.Label(new Rect(5,y, windowRect.width, 20), "(Current OH Version : " + ver + ")" ); y += 30;
+		GUI.Label(new Rect(5, y, windowRect.width, 20), "Unity Plugin requires OpenHaptics version 3.50.0"); y += 30;
+		GUI.Label(new Rect(5, y, windowRect.width, 20), "(Current OH Version : " + ver + ")"); y += 30;
 
-		if(GUI.Button(new Rect(windowRect.width * 0.33f,y, windowRect.width * 0.33f,20), "Exit"))
+		if (GUI.Button(new Rect(windowRect.width * 0.33f, y, windowRect.width * 0.33f, 20), "Exit"))
 		{
 			Application.Quit();
 			showNoDevicePopup = false;
-			#if UNITY_EDITOR
+#if UNITY_EDITOR
 			UnityEditor.EditorApplication.isPlaying = false;
-			#endif
-		} y += 30;
+#endif
+		}
+		y += 30;
 
 	}
 
@@ -1194,5 +1345,4 @@ public class ReadOnlyDrawer : PropertyDrawer
 	}
 }
 #endif*/
-
 
